@@ -1,0 +1,83 @@
+---
+title: "HovanesKeseyan_Lab8"
+author: "Hovanes Keseyan"
+date: "November 15, 2016"
+output: pdf_document
+---
+
+## 1 : Simulation with p.0=48%
+
+```{r }
+# function that takes current probability and returns a result, 1 if win, -1 if loss
+game <- function(p) {
+  if(p<1) sample(c(1,-1), 1, prob = c(p, 1-p))
+  else 1
+}
+
+# function that takes starting win probability, probability increment, wager amount, and number of hands, and returns the balance in dollars
+gamble <- function(p.0, p.i, w, h) {
+  p <- p.0                            # start with the initial win probability
+  b <- 0                              # start with balance = 0
+  i <- 1                              # counter for current hand
+  
+  # run h games, each time adding or subtracting w from b based on result r of game function, then change p based on win or loss
+  for (i in 1:h){
+    r <- game(p)                      # result of the game
+    b <- b + w * r
+    if(r==1) if(p<1-p.i) p <- p + p.i      # if result is a win, increase probability if it is not yet 100%
+    if(r==-1) p <- p.0                 # if result is a loss, return probability to initial value p.0
+  }
+  return(b)
+}
+
+# expected value of simulating the gamble function 100 times
+E.gamble <- mean(replicate(100, gamble(0.48, 0.01, 100, 100000)))
+E.gamble
+```
+
+## 2 : Changing initial win probability to create a fair game
+
+```{r }
+E.gamble <- mean(replicate(100, gamble(0.50, 0.01, 100, 100000)))
+E.gamble
+
+E.gamble <- mean(replicate(100, gamble(0.46, 0.01, 100, 100000)))
+E.gamble
+
+fair.p0.gamble <- function(p.0, p.i, w, h) {
+  E.gamble <- -1
+  while(E.gamble < 0) {
+    E.gamble <- mean(replicate(100, gamble(p.0, p.i, w, h)))
+    if(p.0 < 0.98) p.0 <- p.0 + 0.005
+  }
+
+  output <- list(E.gamble, p.0)
+  names(output) <- c("Expected value of bankroll", "Initial win probability")
+  return(output)
+}
+
+fair.p0.gamble(0.48, 0.01, 100, 100000)
+
+```
+
+## 3 : Changing probability increment
+
+```{r }
+E.gamble <- mean(replicate(100, gamble(0.46, 0.02, 100, 100000)))
+E.gamble
+
+fair.pi.gamble <- function(p.0, p.i, w, h) {
+  E.gamble <- -1
+  while(E.gamble < 0) {
+    E.gamble <- mean(replicate(100, gamble(p.0, p.i, w, h)))
+    p.i <- p.i + 0.005
+  }
+
+  output <- list(E.gamble, p.0, p.i)
+  names(output) <- c("Expected value of bankroll", "Initial win probability", "Probability increment")
+  return(output)
+}
+
+fair.pi.gamble(0.48, 0.01, 100, 100000)
+```
+

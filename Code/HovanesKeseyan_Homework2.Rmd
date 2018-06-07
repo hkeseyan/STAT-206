@@ -1,0 +1,186 @@
+---
+title: "HovanesKeseyan_Homework2"
+author: "Hovanes Keseyan"
+date: "October 6, 2016"
+output: html_document
+---
+
+## 1 : Loading and cleaning
+
+## 1a : Loading the data
+
+```{r }
+ca_pa <- read.csv("http://www.stat.cmu.edu/~cshalizi/uADA/13/hw/01/calif_penn_2011.csv")
+#ca_pa <- read.csv("C:/Users/Hovanes/Downloads/calif_penn_2011.csv")    # offline link
+head(ca_pa)
+```
+
+## 1b : Rows and columns
+
+```{r }
+nrow(ca_pa)
+ncol(ca_pa)
+```
+
+There are 11275 rows and 34 columns.
+
+## 1c : colSums command
+
+```{r }
+colSums(apply(ca_pa,c(1,2),is.na))
+```
+
+The command above displays how many data points in each column are missing values. The apply() command creates a data frame of TRUE and FALSE values, with TRUE being those missing values. The colSums() command sums up each of those TRUE values in each column and displays it. 
+
+## 1d, 1e, 1f : Omitting rows
+
+```{r }
+ca_pa.omit <- na.omit(ca_pa)
+
+nrow(ca_pa.omit)
+```
+
+The data frame went from having 11275 rows to 10605 rows, which means 670 rows were eliminated.
+
+```{r }
+colSums(apply(ca_pa.omit,c(1,2),is.na))
+```
+
+By running the colSums() command for the new data frame, we see that there are no more missing values in the data frame.
+
+## 2 : This Very New House
+
+## 2a : Percentage of houses built since 2005 plotted against median house value
+
+```{r }
+plot(ca_pa.omit$Median_house_value, ca_pa.omit$Built_2005_or_later, ylim = c(0,100), xlim = c(0,1000000), ylab = "Percentage of houses built since 2005", xlab = "Median house value")
+```
+
+## 2b : Percentage of houses built since 2005 plotted against median house value in California
+
+```{r }
+ca <- ca_pa.omit[ca_pa.omit$STATEFP==6, ]
+plot(ca$Median_house_value, ca$Built_2005_or_later, ylim = c(0,100), xlim = c(0,1000000), ylab = "Percentage of houses built since 2005", xlab = "Median house value")
+```
+
+## 2b : Percentage of houses built since 2005 plotted against median house value in Pennsylvania
+
+```{r }
+pa <- ca_pa.omit[ca_pa.omit$STATEFP==42, ]
+plot(pa$Median_house_value, pa$Built_2005_or_later, ylim = c(0,100), xlim = c(0,1000000), ylab = "Percentage of houses built since 2005", xlab = "Median house value")
+```
+
+## 3 : Nobody Home
+
+## 3a : Vacany rates
+
+```{r }
+# Find vacancy rate by dividing number of vacant units by number of total units
+ca_pa.vr <-  ca_pa.omit$Vacant_units / ca_pa.omit$Total_units
+# Update data frame with the vacancy rate column
+ca_pa <- data.frame(ca_pa.omit, ca_pa.vr)
+
+# minimum vacancy rate
+min(ca_pa.vr)
+# maximum vacancy rate
+max(ca_pa.vr)
+# mean vacancy rate
+mean(ca_pa.vr)
+# median vacancy rate
+median(ca_pa.vr)
+```
+
+## 3b : Vacancy rate plotted against median house value
+
+```{r }
+plot(ca_pa$Median_house_value, ca_pa$ca_pa.vr, ylim = c(0,1), xlim = c(0,1000000), ylab = "Vacancy rate", xlab = "Median house value")
+```
+
+## 3c : Vacancy rate plotted against median house value for California
+
+```{r }
+ca <- ca_pa[ca_pa$STATEFP==6, ]
+plot(ca$Median_house_value, ca$ca_pa.vr, ylim = c(0,1), xlim = c(0,1000000), ylab = "Vacancy rate", xlab = "Median house value")
+```
+
+## 3c : Vacancy rate plotted against median house value for Pennsylvania
+
+```{r }
+pa <- ca_pa[ca_pa$STATEFP==42, ]
+plot(pa$Median_house_value, pa$ca_pa.vr, ylim = c(0,1), xlim = c(0,1000000), ylab = "Vacancy rate", xlab = "Median house value")
+```
+
+The significant differences between California and Pennsylvania is that Pennsylvania has lower median house value and a higher vacancy rate at the lower house values. 
+
+## 4 : Counties
+
+## 4a : Median house value code
+
+```{r }
+acca <- c()
+for (tract in 1:nrow(ca_pa)) {
+  if (ca_pa$STATEFP[tract] == 6) {
+    if (ca_pa$COUNTYFP[tract] == 1) {
+      acca <- c(acca, tract)
+    }
+  }
+}
+accamhv <- c()
+for (tract in acca) {
+  accamhv <- c(accamhv, ca_pa[tract,10])
+}
+median(accamhv)
+```
+
+The code above displays median house value in Alameda County in California. It creates an array acca (Alameda County, CA), which it populates with the for() loop by checking for all data in Alameda County (COUNTYFP==1), CA (STATEFP==6). It then creates an array accamhv which looks up median house value (ca_pa[ , 10]) for all data from acca. It then displays the median of that dataset.
+
+## 4b : Median house value in one line of R code
+
+```{r }
+median(ca_pa[ca_pa$STATEFP==6 & ca_pa$COUNTYFP==1, 10])
+```
+
+The above line of code accomplishes the same thing using much less code by simpling displaying the median of all data in column 10 (median house value) of the data frame ca_pa which corresponds to Alameda County CA data.
+
+## 4c : Percentage of houses built since 2005 per county
+
+The following code will take the percentage of houses built in each county since 2005 and calculate the mean.
+
+```{r }
+# Alameda County, CA
+mean(ca_pa[ca_pa$STATEFP==6 & ca_pa$COUNTYFP==1, 16])
+# Santa Clara County, CA
+mean(ca_pa[ca_pa$STATEFP==6 & ca_pa$COUNTYFP==85, 16])
+# Allegheny County, PA
+mean(ca_pa[ca_pa$STATEFP==42 & ca_pa$COUNTYFP==3, 16])
+```
+
+## 4d : Correlation between median house value and percent of housing built since 2005
+
+```{r }
+# California and Pennsylvania
+cor(ca_pa[,10], ca_pa[,16])
+# California
+cor(ca_pa[ca_pa$STATEFP==6,10], ca_pa[ca_pa$STATEFP==6,16])
+# Pennsylvania
+cor(ca_pa[ca_pa$STATEFP==42,10], ca_pa[ca_pa$STATEFP==42,16])
+# Alameda County, CA
+cor(ca_pa[ca_pa$STATEFP==6 & ca_pa$COUNTYFP==1,10], ca_pa[ca_pa$STATEFP==6 & ca_pa$COUNTYFP==1,16])
+# Santa Clara County, CA
+cor(ca_pa[ca_pa$STATEFP==6 & ca_pa$COUNTYFP==85,10], ca_pa[ca_pa$STATEFP==6 & ca_pa$COUNTYFP==85,16])
+# Allegheny County, PA
+cor(ca_pa[ca_pa$STATEFP==42 & ca_pa$COUNTYFP==3,10], ca_pa[ca_pa$STATEFP==42 & ca_pa$COUNTYFP==3,16])
+```
+
+## 4e : Plotting median house values against median income per county
+
+```{r }
+ac.ca <- ca_pa[ca_pa$STATEFP==6 & ca_pa$COUNTYFP==1,]
+scc.ca <- ca_pa[ca_pa$STATEFP==6 & ca_pa$COUNTYFP==85,]
+ac.pa <- ca_pa[ca_pa$STATEFP==42 & ca_pa$COUNTYFP==3,]
+
+plot(ac.ca$Median_household_income, ac.ca$Median_house_value, ylim = c(0,1000000), xlim = c(0,200000), ylab = "Median house value", xlab = "Median income", main = "Alameda County, CA")
+plot(scc.ca$Median_household_income, scc.ca$Median_house_value, ylim = c(0,1000000), xlim = c(0,200000), ylab = "Median house value", xlab = "Median income", main = "Santa Clara County, CA")
+plot(ac.pa$Median_household_income, ac.pa$Median_house_value, ylim = c(0,1000000), xlim = c(0,200000), ylab = "Median house value", xlab = "Median income", main = "Allegheny County, PA")
+```
+

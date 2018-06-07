@@ -1,0 +1,180 @@
+---
+title: "HovanesKeseyan_Homework4"
+author: "Hovanes Keseyan"
+date: "October 23, 2016"
+output: pdf_document
+---
+
+## Part I - Estimates and standard errors
+
+## 1 : gamma.est function
+
+```{r }
+estimates <- c(0,0)
+names(estimates) <- c("shape", "scale")
+
+gamma.est <- function(x) {
+  estimates[1] <- mean(x)^2 / var(x)
+  estimates[2] <- var(x) / mean(x)
+  
+  return(estimates)
+}
+```
+
+## 2 : Verify function
+
+```{r }
+library(MASS)
+data(cats)
+gamma.est(cats[,"Hwt"])
+```
+
+## 3 : rgamma
+
+```{r }
+rv <- rgamma(n=10000, shape = 19, scale = 0.56)
+
+a <- 19
+s <- 0.56
+
+t.mean <- a*s
+t.mean
+t.var <- a*(s^2)
+t.var
+s.mean <- mean(rv)
+s.mean
+s.var <- var(rv)
+s.var
+```
+
+The theoretical mean and variance are the estimates based on the shape and scale of the gamma distribution. The sample mean and variance are the values calculated using the randomly generated data set for the same shape and scale.
+
+The theoretical mean is 10.64, and the sample mean is 10.65295. These numbers are close.
+
+The theoretical variance is 5.9584, and the sample variance is 5.980283. These numbers are somewhat close, but significantly different.
+
+## 4 : histogram 
+
+```{r }
+hist(rv, probability = TRUE)
+curve(dgamma(x, shape=19, scale=0.56), add = TRUE)
+```
+
+The curve seems to fit the histogram very well.
+
+## 5 : gamma.est on random sample
+
+```{r }
+gamma.est(rv)
+```
+
+The estimated shape is approximately 18.95, which is not too far from the true value of 19. The estimated scale of approximately 0.56076 is almost exactly the true value of 0.56.
+
+## 6 : gamma.est.se
+
+```{r }
+gamma.est.sim <- function(a, s, n, B) {
+  sim <- array(dim = c(2, B))
+  row.names(sim) <- c("shape", "scale")
+  i <- 1
+  while(i <= B) {
+    rv <- rgamma(n=n, shape=a, scale=s)
+    est <- gamma.est(rv)
+    sim[1, i] <- est[1]
+    sim[2, i] <- est[2]
+    i <- i + 1
+  }
+  return(sim)
+}
+
+gamma.est.se <- function(a, s, n, B) {
+  se <- c(0,0)
+  names(se) <- c("shape standard error", "scale standard error")
+  sim <- gamma.est.sim(a, s, n, B)
+  se[1] <- sd(sim[1,])/sqrt(n)
+  se[2] <- sd(sim[2,])/sqrt(n)
+  return(se)
+}
+```
+
+## Part II - Testing with a stub
+
+## 7 : stub version of gamma.est.sim
+
+```{r }
+gamma.est.sim <- function(a, s, n, B) {
+  sim <- array(dim = c(2, B))
+  row.names(sim) <- c("shape", "scale")
+  i <- 1
+  while(i <= B) {
+    alt <- c(a, a+1, s, s+n)
+    sim[1, i] <- alt[1]
+    if (i+1 <= B) sim[1, i+1] <- alt[2]   # introduce a check for the case of odd B
+    sim[2, i] <- alt[3]
+    if (i+1 <= B) sim[2, i+1] <- alt[4]   # introduce a check for the case of odd B
+    i <- i + 2
+  }
+  return(sim)
+}
+
+array1 <- gamma.est.sim(2,1,10,10)
+array1
+
+array2 <- gamma.est.sim(2,8,5,7)
+array2
+
+```
+
+## 8 : standard deviation of gamma.est.sim rows
+
+```{r }
+# standard deviation of shape component for gamma.est.sim(2,1,10,10)
+sd(array1[1,])
+# standard deviation of scale component for gamma.est.sim(2,1,10,10)
+sd(array1[2,])
+# standard deviation of shape component for gamma.est.sim(2,8,5,7)
+sd(array2[1,])
+# standard deviation of scale component for gamma.est.sim(2,8,5,7)
+sd(array2[2,])
+```
+
+## 9 : running gamma.est.se
+
+```{r }
+gamma.est.se(2,1,10,10)
+gamma.est.se(2,8,5,7)
+```
+
+The standard errors are consistent with what we observe from the respective standard deviations. For the first array, standard deviation and standard error each differ by a factor of 10 between the shape and scale. Likewise, they each differ by a factor of 5 for the second array.
+
+## Part III - Replacing the stub
+
+## 10 : actual gamma.est.sim
+
+```{r }
+gamma.est.sim <- function(a, s, n, B) {
+  sim <- array(dim = c(2, B))
+  row.names(sim) <- c("shape", "scale")
+  i <- 1
+  while(i <= B) {
+    rv <- rgamma(n=n, shape=a, scale=s)
+    est <- gamma.est(rv)
+    sim[1, i] <- est[1]
+    sim[2, i] <- est[2]
+    i <- i + 1
+  }
+  return(sim)
+}
+```
+
+## 11 : running gamma.est.se
+
+```{r }
+gamma.est.se(2,1,10,1e5)
+
+arr <- gamma.est.sim(2,1,10,1e5)
+sd(arr[1,])
+sd(arr[2,])
+```
+
+The answers are not exactly 1.6 and 0.54 because those are theoretical values, and this function returns sample values from a set of different randomly generated distributions.

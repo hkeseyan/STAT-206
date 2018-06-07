@@ -1,0 +1,48 @@
+---
+title: "HovanesKeseyan_Lab6"
+author: "Hovanes Keseyan"
+date: "November 1, 2016"
+output: pdf_document
+---
+
+## 1 & 2 
+
+```{r }
+ar.cauchy <- function(n=100){
+  x <- double(n)
+  i <- 1
+  r <- 0
+  while(i < (n+1)) {
+    u <- rcauchy(1)
+    y <- u^3 * log(1+abs(u))
+    u <- rcauchy(1)
+    m <- 8*log(3)
+    temp <- m*y
+    if(u < temp){
+        x[i] <- y
+        i <- i+1
+    } else {r <- r+1}
+  }
+  ar <- r/(r+n)
+  mcse <- sd(x)/sqrt(n)
+  mcse
+  result <- list(x, ar, mcse)
+  names(result) <- c("x", "acceptance rate", "monte carlo standard error")
+return(result)
+}
+
+ar.cauchy(1000)
+```
+
+The monte carlo standard error is 8913833.
+
+## 3 : acceptance rate
+
+```{r }
+# theoretical acceptance rate
+m <- 8*log(3)
+ar.t <- 1/m
+ar.t
+```
+
+The actual acceptance rate is 0.4977398. The theoretical acceptance rate is 0.1137799.

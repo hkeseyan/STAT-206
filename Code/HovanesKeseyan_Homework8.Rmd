@@ -1,0 +1,175 @@
+---
+title: "HovanesKeseyan_Homework8"
+author: "Hovanes Keseyan"
+date: "November 22, 2016"
+output: pdf_document
+---
+
+## Part I : Metropolis-Hasting algorithm
+
+## 1 : Independence MH sampler with $g \sim \Gamma(2, \theta)$
+
+```{r }
+ind.chain <- function(x, n, theta = 1) {
+  ## if theta = 1, then this is an iid sampler
+  m <- length(x)
+  x <- append(x, double(n))
+  for(i in (m+1):length(x)){
+    x.prime <- rgamma(1, shape = 2, scale=theta)
+    # u is R(x[(i-1)], x.prime), which simplifies below:
+    u <- exp((x[(i-1)]-x.prime)*(1-1/theta))
+    if(runif(1) < u)
+      x[i] <- x.prime
+    else
+      x[i] <- x[(i-1)]
+  }
+  return(x)
+}
+```
+
+## 2 : $R(x_t, X^*)$ for the sampler
+
+$R(x_t, X^*) = \frac{f(x^*)g(x_t)}{f(x_t)g(x^*)} = \frac{e^{-x^*-\frac{x_t}{\theta}}}{e^{-x_t-\frac{x^*}{\theta}}} = e^{-x^*-\frac{x_t}{\theta}+x_t+\frac{x^*}{\theta}} = e^{(x_t-x^*)(1-\frac{1}{\theta})}$
+
+## 3 : Generating 1000 draws from f with $\theta \in \{ 1/2, 1, 2 \}$
+
+```{r }
+ind.0.5 <- ind.chain(1,5000,0.5)
+ind.1 <- ind.chain(1,5000,1)
+ind.2 <- ind.chain(1,5000,2)
+```
+
+
+## 4 : Random walk MH sampler with $h \sim N(0, \sigma^2)$
+
+```{r }
+rw.chain <- function(x, n, sigma = 1) {
+  m <- length(x)
+  x <- append(x, double(n))
+  for(i in (m+1):length(x)){
+    x.prime <- x[(i-1)] + rnorm(1, sd = sigma)
+    # u is R(x[(i-1)], x.prime), which simplifies below:
+    u <- exp(x[(i-1)]-x.prime)
+    u
+    if(runif(1) < u && x.prime > 0)
+      x[i] <- x.prime
+    else
+      x[i] <- x[(i-1)]
+  }
+  return(x)
+}
+```
+
+
+## 5 : $R(x_t, X^*)$ for the sampler
+
+$R(x_t, X^*) = \frac{f(x^*)}{f(x_t)} = \frac{e^{-x^*}}{e^{-x_t}} = e^{-x^*+x_t} = e^{x_t-x^*}$
+
+## 6 : Generating 10000 draws from $f$ with $\sigma \in \{ .2, 1, 5 \}$
+
+```{r }
+rw.0.2 <- rw.chain(1,5000,0.2)
+rw.1 <- rw.chain(1,5000,1)
+rw.5 <- rw.chain(1,5000,5)
+```
+
+```{r }
+par(mfrow=c(2,3))
+plot(ind.0.5, type="l")
+plot(ind.1, type="l")
+plot(ind.2, type="l")
+plot(rw.0.2, type="l")
+plot(rw.1, type="l")
+plot(rw.5, type="l")
+```
+
+## 7
+
+I prefer a random walk sampler because $R(x_t, X^*)$ is easier to obtain.
+
+## 8 : Fixed-width stopping rule
+
+```{r }
+rw.chain <- function(x, n, sigma = 1) {
+  m <- length(x)
+  x <- append(x, double(n))
+  for(i in (m+1):length(x)){
+    x.prime <- x[(i-1)] + rnorm(1, sd = sigma)
+    # u is R(x[(i-1)], x.prime), which simplifies below:
+    u <- exp(x[(i-1)]-x.prime)
+    # parameters for fixed-width stopping initialized below
+    est <- mean(u)
+    mcse <- sd(u) / sqrt(length(u))
+    interval <- est + c(-1,1)*1.96*mcse
+    eps <- 0.1
+    len <- diff(interval)
+    # fixed-width stopping rule added below
+    while(len > eps){
+      x.prime <- x[(i-1)] + rnorm(1, sd = sigma)
+      u <- exp(x[(i-1)]-x.prime)
+      est <- mean(u)
+      mcse <- sd(u) / sqrt(length(u))
+      interval <- est + c(-1,1)*1.96*mcse
+      len <- diff(interval)
+    }
+    if(runif(1) < u && x.prime > 0)
+      x[i] <- x.prime
+    else
+      x[i] <- x[(i-1)]
+  }
+  return(x)
+}
+```
+
+## Part II : Anguilla eel data
+
+## 9+10+11 : MCMClogit function
+
+```{r }
+library(MCMCpack)
+library(dismo)
+data(Anguilla_train)
+head(Anguilla_train)
+# model formula includes all of the coefficients, and mcmc=100000 makes it run 100,000 iterations
+Anguilla <- MCMClogit(Angaus~SegSumT+DSDist+USNative+DSMaxSlope+USSlope+as.factor(Method), data=Anguilla_train , mcmc=100000)
+plot(Anguilla)
+summary(Anguilla)
+```
+
+The means for each coefficient are found in part 1. of the summary(Anguilla) text above, along with the standard deviation and standard error values. UNcertainty values are found in part 2. of the return text.
+
+## Part III : Permutation data
+
+## 13 : Cram'er von Mises test as a permutation test
+
+```{r }
+data(chickwts)
+tail(chickwts)
+summary(chickwts)
+nrow(chickwts)
+
+Trt <- chickwts$weight[1:34]
+C <- chickwts$weight[35:71]
+n1 <- length(Trt)
+n2 <- length(C)
+Z <- c(Trt,C)
+N <- length(Z)
+obs_stat <- mean(Trt)-mean(C)
+B <- 1000
+new_stats <- numeric(B)
+for( i in 1:B){
+    idx <- sample(1:N,size=n1, replace=F)
+    newT <- Z[idx]
+    newC <- Z[-idx]
+    new_stats[i] <- mean(newT)-mean(newC)
+    }
+
+pvalue <- mean(c(obs_stat,new_stats)>=obs_stat)
+pvalue
+
+hist(new_stats, main="Permutation Distribution")
+points(obs_stat,0, cex=1, pch=16)
+```
+
+
+

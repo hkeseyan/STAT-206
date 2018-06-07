@@ -1,0 +1,123 @@
+---
+title: "HovanesKeseyan_Lab3"
+author: "Hovanes Keseyan"
+date: "October 12, 2016"
+output: html_document
+---
+
+## Part I
+
+## 1 : Summary of cats data
+
+```{r }
+library(MASS)
+data(cats)
+summary(cats)
+```
+
+The cats database contains the sex of cats (male or female, with 97 males and 47 females in the population) along with the body weight, Bwt, and heart weight, Hwt. We have the statistical distribution of the data.
+
+## 2 : Histogram of cat weight data
+
+```{r }
+hist(cats[,"Bwt"], probability = TRUE, main = "Histogram of Cat Body Weight")
+abline(v=2.724)
+
+hist(cats[,"Hwt"], probability = TRUE, main = "Histogram of Cat Heart Weight")
+abline(v=10.63)
+```
+
+The calculated mean of the body weight data does not look correct, since the density does not seem to bundle up near the mean value, which is the vertical line that was added at 2.724. The calculated mean of the heart weight does look to be correct, however.
+
+## 3 : Fake mean and Fake var
+
+```{r }
+fake.mean <- 10
+fake.var <- 8
+a <- fake.mean^2 / fake.var
+a
+s <- fake.var / fake.mean
+s
+expected.value <- a*s
+expected.value
+variance <- a*(s^2)
+variance
+```
+
+The values equal what was expected.
+
+## 4 : Mean, standard deviation, and variance
+
+```{r }
+options(digits=4)
+mean(cats[,"Hwt"])
+options(digits=3)
+sd(cats[,"Hwt"])
+var(cats[,"Hwt"])
+a <- mean(cats[,"Hwt"])^2 / var(cats[,"Hwt"])
+options(digits=4)
+a
+s <- var(cats[,"Hwt"]) / mean(cats[,"Hwt"])
+options(digits=2)
+s
+```
+
+## 5 : Mean and variance function
+
+```{r }
+stats <- c(0,0)
+names(stats) <- c("Mean", "Variance")
+cat.stats <- function(wt) {
+  stats[1] <- mean(wt)
+  stats[2] <- var(wt)
+  return(stats)
+}
+options(digits = 3)
+cat.stats(cats[,"Hwt"])
+```
+
+The function returns the same values as above.
+
+## Part II
+
+## 6 : Estimate function
+
+```{r }
+estimates <- c(0,0)
+names(estimates) <- c("a", "s")
+gamma.cat <- function(wt) {
+  estimates[1] <- mean(wt)^2 / var(wt)
+  estimates[2] <- var(wt) / mean(wt)
+  return(estimates)
+}
+options(digits = 2)
+gamma.cat(cats[,"Hwt"])
+```
+
+The values agree with the previous calculations.
+
+## 7 : Estimates for each gender
+
+```{r }
+# Male cats
+cats.m.Hwt <- cats[cats$Sex=="M", "Hwt"]
+gamma.cat(cats.m.Hwt)
+
+# Female cats
+cats.f.Hwt <- cats[cats$Sex=="F", "Hwt"]
+gamma.cat(cats.f.Hwt)
+```
+
+## 8 : Histogram of female cat data
+
+```{r }
+hist(cats.f.Hwt, probability = TRUE)
+curve(dgamma(x, shape=45.9, scale=0.2), add = TRUE)
+```
+
+## 9 : Histogram of male cat data
+
+```{r }
+hist(cats.m.Hwt, probability = TRUE, ylim = c(0,0.17), xlim = c(0,25))
+curve(dgamma(x, shape=19.84, scale = 0.57), add = TRUE)
+```

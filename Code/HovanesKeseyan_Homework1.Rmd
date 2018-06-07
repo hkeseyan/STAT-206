@@ -1,0 +1,157 @@
+---
+title: "HovanesKeseyan_Homework1"
+author: "Hovanes Keseyan"
+date: "October 1, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1 : Rainfall dataset
+
+## 1a : Loading dataset
+
+```{r}
+rain.df <- read.table("http://www.stats.uwo.ca/faculty/braun/data/rnf6080.dat")
+```
+
+## 1b: Check rows and columns
+
+```{r rain.df}
+dim.rain.df <- dim(rain.df)   
+rows.rain.df <- dim.rain.df[1]
+cols.rain.df <- dim.rain.df[2]
+
+rows.rain.df
+cols.rain.df
+```
+
+The dataset contains 5070 rows and 27 columns.
+
+## 1c : Column names
+
+```{r}
+names(rain.df)
+```
+
+## 1d : Displaying value of data in a specific location
+
+```{r}
+rain.df[5, 7]
+```
+
+## 1e : Displaying an entire row
+
+```{r}
+rain.df[2,]
+```
+
+## 1f : Renaming columns
+
+```{r}
+names(rain.df) <- c("year", "month", "day", seq(0,23))
+names(rain.df)
+head(rain.df) ##check the dataset
+tail(rain.df) ##check the dataset
+```
+
+The functon sets the names of the first 3 columns to year, month, and day respectively, and then renames columns 4 to 27 to the integers from 0 to 23 sequentially. These last 24 columns represent rainfall during the different hours of the day. The head() and tail() functions display the first and last few entries, respectively, which helps to understand the dataset by providing a small sample.
+
+## 1g : Summing rainfall values and displaying as a histogram
+
+```{r}
+## create a matrix that includes all of the hourly rainfall data
+hourly.rain <- rain.df[ , 4:27]
+tail(hourly.rain) ## check the dataset
+## create an array that sums all hourly rainfall data into daily rainfall
+daily <- rowSums(hourly.rain)
+tail(daily) ## check the dataset
+## insert the array of daily sums to the original data frame as a new column
+rain.df.daily <- data.frame(rain.df, daily)
+names(rain.df.daily) <- c("year", "month", "day", seq(0,23), "daily")
+tail(rain.df.daily) ## check the dataset
+
+## histogram of daily rainfall
+hist(daily)
+```
+
+The histogram reveals a large amount of negative values for rainfall, which clearly does not make sense.
+
+## 1h : Fixing the daily rainfall values
+
+```{r}
+## set each value of the hourly rain matrix that is less than zero to zero
+hourly.rain[hourly.rain < 0] <- NA
+## update the daily sum array from the fixed data
+daily <- rowSums(hourly.rain)
+# create a new data frame with the fixed hourly and daily values
+rain.df.fixed <- data.frame(rain.df[ , 1:3], hourly.rain, daily)
+
+# histogram of fixed daily rainfall
+hist(daily)
+```
+
+The fixed dataset has removed all negative values of rainfall which are assumed to be errors. The value of -999 was present in large amounts, which is unlikely a coincidence of anything besides an error in data collection. The histogram of the fixed dataset makes a lot more sense now.
+
+## 2 : Syntax and class-typing
+
+## 2a : Vector of character strings
+
+```{r}
+vector1 <- c("5", "12", "7", "32")
+max(vector1)
+sort(vector1)
+#sum(vector1)
+```
+
+The vector consists of character strings, and no numeric values. The max() and sort() functions work in alphabetical order, and so "12" is the first in alphabetical order and "7" is last in alphabetical order because it checks alphabetical order by comparing the first digit, and 1 is earlier in the alphabetical order than 7. The max() function finds the value furthest along the alphanumeric scale. The sum() function produces an error because it does not compute non-numeric entries.
+
+## 2b : Vector of character strings and numeric values
+
+```{r}
+vector2 <- c("5", 7, 12)
+#vector2[2] + vector2[3]
+```
+
+The addition function produces an error since the vector contains different categories of data. The function will not run if the vector has a mix of character strings and numeric entries, even if only numeric entries in the vector are being called for the function.
+
+```{r}
+dataframe3 <- data.frame(z1="5",z2=7,z3=12)
+dataframe3[1,2] + dataframe3[1,3]
+```
+
+Data frames may hold a mix of different categories of data, given each column is the same data type. Therefore, as long as only numeric entries are being called for the artithmetic function, there will not be an error.
+
+```{r}
+list4 <- list(z1="6", z2=42, z3="49", z4=126)
+list4[[2]]+list4[[4]]
+#list4[2]+list4[4]
+```
+
+Using double brackets [[]] around an index for a list will remove names and structures, while single brackets [] will not. The addition function with double brackets will compute without an error because it will take z1 and z3 as numeric. The addition function with single brackets cannot be used to perform functions exclusive to numeric elements.
+
+## 3 : Working with functions and operators
+
+## 3a : seq() function
+
+The colon operator in the seq() function is essentially a shortcut for which the 'by' argument is equal to 1. The function seq(a:b) is easier to type than seq(a, b, by=1)
+
+```{r}
+seq(1, 10000, by=372)
+seq(1, 10000, length.out=50)
+```
+
+## 3b : rep() function
+
+```{r}
+rep(1:3, times=3)
+rep(1:3, each=3)
+```
+
+In a rep() function, 'times' will replicate the first argument the number of times indicated. However, 'each' will replicate each element the number of times indicated one at a time. In other words, 'each' replicates each element first before replicating the next element.
+
+
+
+

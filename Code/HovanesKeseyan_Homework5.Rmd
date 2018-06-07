@@ -1,0 +1,84 @@
+---
+title: "HovanesKeseyan_Homework5"
+author: "Hovanes Keseyan"
+date: "October 26, 2016"
+output: html_document
+---
+
+## Part I - Optimization and standard errors
+
+## 1 : Maximizing likelihood of gamma distribution on cats' hearts
+
+```{r }
+library(MASS)
+data(cats)
+summary(cats)
+
+m <- mean(cats$Hwt)
+v <- var(cats$Hwt)
+a <- m*(((m*(1-m))/v)-1)
+b <- (1-m)*(((m*(1-m))/v)-1)
+
+ll <- function(p = c(a,b)) {
+  ll.sum <- -sum(dbeta(cats$Hwt, p[1], p[2], log = TRUE))
+  return(ll.sum)
+}
+
+nlm(ll, c(a,b))
+```
+
+THe nlm command is used to find the minimum negative of the log-likelihood, whose absolute value is equivalent to the maximum log-likelihood. We input the alpha and beta parameters from the gamma function that we obtained from the method of moments.
+
+The estimate for alpha is -194.2401, while the estimate for beta is 175.9682. The log-likelihood there is 1.797693e+308. THe gradient is 0.
+
+## 2 : make.gamma.loglike
+
+```{r }
+make.gamma.loglike <- function(p = c(a,b)) {
+  loglike <- dbeta(cats$Hwt, p[1], p[2], log = TRUE)
+  return(loglike)
+}
+```
+
+## 3 : gamma.mle
+
+```{r }
+gamma.mle <- function()
+```
+
+## 
+
+```{r }
+
+```
+
+## 
+
+```{r }
+
+```
+
+## 
+
+```{r }
+
+```
+
+## 
+
+```{r }
+
+```
+
+## 
+
+```{r }
+
+```
+
+## 
+
+```{r }
+
+```
+

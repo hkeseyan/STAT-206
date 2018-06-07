@@ -1,0 +1,90 @@
+---
+title: "HovanesKeseyan_Lab9"
+author: "Hovanes Keseyan"
+date: "November 22, 2016"
+output: pdf_document
+---
+
+## Gibbs sampler
+
+## 1 : Full conditional distributions of $Y_1|Y_2$ and $Y_2|Y_1$
+
+```{r }
+x <- c(1, 1, 1, 1, 1, 1, 1, 1)
+y1.y2 <- function(x, p, y2){
+  pnorm(x, p*y2, 1-p^2)
+}
+y2.y1 <- function(x, p, y1){
+  pnorm(x, p*y1, 1-p^2)
+}
+y1.y2(x, .5, 1)
+y2.y1(x, .5, 1)
+```
+$Y_1|Y_2 = N(\mu_1 + \Sigma_{12}\Sigma_{22}^{-1}(Y_2-\mu_2), \Sigma_{11}-\Sigma_{12}\Sigma_{11}^{-1}\Sigma_{21})$
+
+$Y_1|Y_2 = N(pY_2, 1-p^2)$
+
+
+$Y_2|Y_1 = N(\mu_2 + \Sigma_{21}\Sigma_{11}^{-1}(Y_1-\mu_1), \Sigma_{22}-\Sigma_{21}\Sigma_{22}^{-1}\Sigma_{12})$
+
+$Y_2|Y_1 = N(pY_1, 1-p^2)$
+
+## 2 : Gibbs sampler
+
+```{r }
+gibbs.chain <- function(n, y1.start = 0, y2.start = 0, p) {
+    output <- matrix(0, nrow=n, ncol=2)
+    for(i in 1:n){
+        y1.new <- rnorm(1, p*y2.start, 1-p^2)
+        y2.new <- rnorm(1, y1.new, 1-p^2)
+        output[i,] <- c(y1.new, y2.new)
+        y1.start <- y1.new
+        y2.start <- y2.new    
+    }
+    return(output)
+}
+```
+
+
+## 3 : Generating 10000 draws
+
+```{r }
+samp <- gibbs.chain(10000, 0, 0, 0.7)
+y1 <- samp[,1]
+y2 <- samp[,2]
+
+plot(y1, type = "l")
+plot(y2, type = "l")
+```
+
+
+## 4 : PLotting marginal distributions with true distribution
+
+```{r }
+hist(y1, probability = TRUE)
+curve(dnorm(x), add = TRUE)
+
+hist(y2, probability = TRUE)
+curve(dnorm(x), add = TRUE)
+```
+
+The marginal distributions for Y1 and Y2 seem to follow the true distribution very well by shape.
+
+## 5 : Estimating effective sample size
+
+```{r }
+library(mcmcse)
+ess(y1)
+ess(y2)
+
+par(mfrow=c(1,2))
+estvssamp(y1)
+estvssamp(y2)
+```
+
+We could have used a much smaller sample size than the original 10000 that we used, and we would have gotten results that matched the true distribution while using less computing power. 
+
+## 6 : Mixing properties for the Gibbs sampler
+
+The mixing properties for the Gibbs sampler allow for a robust approximation of the distribution. The histogram plots of the marginal distributions with the true normal distributions overlayed support this.
+

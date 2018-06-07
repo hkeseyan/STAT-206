@@ -1,0 +1,317 @@
+---
+title: "HovanesKeseyan_Homework6"
+author: "Hovanes Keseyan"
+date: "November 5, 2016"
+output: pdf_document
+---
+
+## Part I : Gambler's Ruin
+
+## 1 : Betting on a fair game
+
+```{r }
+# starting bankroll
+sbr <- 1000
+# bet amount
+b <- 100
+# max iterations
+n <- 5000
+# probability of winning a hand
+p <- 0.5
+
+```
+
+The following function takes the starting bankroll, the bet amount, the maximum number of iterations, and the probability of winning a hand, and returns a boolan value informing whether or not the player has busted. A return value of TRUE indicates the player has busted.
+
+```{r }
+gamble <- function(br=sbr, b=b, n=n, p=p) {
+  i <- 0
+  while(br > 0 & i < n){
+    wl <- sample(c(1, -1), size=1, prob = c(p, 1-p))   # win/loss outcome
+    br <- br + wl*b
+    i <- i+1
+  }
+  if(i >= n) busted <- FALSE
+  else busted <- TRUE
+  return(busted)
+}
+```
+
+## 1a : Probability of having busted by 100th bet
+
+```{r }
+# run the gamble function a large number of times and find probability
+p.b.100 <- sum(replicate(1000,gamble(sbr,b,100, 0.5)))/1000
+p.b.100
+```
+
+## 1b : Probability of having busted by 500th bet
+
+```{r }
+# run the gamble function a large number of times and find probability
+p.b.500 <- sum(replicate(1000,gamble(sbr,b,500, 0.5)))/1000
+p.b.500
+```
+
+## 1c : Mean time until bust, given busting within 5000 hands
+
+The following function runs the gamble() function, but instead returns the number of hands played before busting. If the player did not bust by the time the maximum number of hands (n) is played, it repeats the function until the condition is satisfied.
+
+```{r }
+gamble.hands <- function(br=sbr, b=b, n=n, p=p) {
+  i <- 0
+  while(br > 0 & i < n){
+    wl <- sample(c(1, -1), size=1, prob = c(p, 1-p))   # win/loss outcome
+    br <- br + wl*b
+    i <- i+1
+  }
+  return(i)
+}
+# run the gamble.hands function a large number of times and take the mean
+v1c <- replicate(1000,gamble.hands(sbr,b, 5000, 0.5))
+mean(v1c)
+
+v1c <- replicate(1,gamble.hands(sbr,b, 5000, 0.5))
+mean(v1c)
+
+v1c <- replicate(10,gamble.hands(sbr,b, 5000, 0.5))
+mean(v1c)
+
+v1c <- replicate(3000,gamble.hands(sbr,b, 5000, 0.5))
+mean(v1c)
+
+```
+
+## 1d : Mean and variance of bankroll after 100 hands
+
+The following function runs the gamble() function, but instead returns the current bankroll after n bets.
+
+```{r }
+gamble.br <- function(br=sbr, b=b, n=n, p=p) {
+  i <- 0
+  while(br > 0 & i < n){
+    wl <- sample(c(1, -1), size=1, prob = c(p, 1-p))   # win/loss outcome
+    br <- br + wl*b
+    i <- i+1
+  }
+  return(br)
+}
+# run the gamble.br function a large number of times and take the mean and variance
+v1d <- replicate(1000,gamble.br(sbr,b, 100, 0.5))
+mean(v1d)
+var(v1d)
+```
+
+## 1e : Mean and variance of bankroll after 500 hands
+
+```{r }
+# run the gamble.br function a large number of times and take the mean and variance
+v1e <- replicate(1000,gamble.br(sbr,b, 500, 0.5))
+mean(v1e)
+var(v1e)
+```
+
+## 2 : Betting on black
+
+## 2a : Probability of having busted by 500th bet
+
+```{r }
+# run the gamble function a large number of times and find probability
+p.b.100 <- sum(replicate(1000,gamble(sbr,b,100, 18/38)))/1000
+p.b.100
+```
+
+## 2b : Probability of having busted by 500th bet
+
+```{r }
+# run the gamble function a large number of times and find probability
+p.b.500 <- sum(replicate(1000,gamble(sbr,b,500, 18/38)))/1000
+p.b.500
+```
+
+## 2c : Mean time until bust, given busting within 5000 hands
+
+```{r }
+# run the gamble.hands function a large number of times and take the mean
+v2c <- replicate(1000,gamble.hands(sbr,b, 5000, 18/38))
+mean(v2c)
+```
+
+## 2d : Mean and variance of bankroll after 100 hands
+
+```{r }
+# run the gamble.br function a large number of times and take the mean and variance
+v2d <- replicate(1000,gamble.br(sbr,b, 100, 18/38))
+mean(v2d)
+var(v2d)
+```
+
+## 2e : Mean and variance of bankroll after 500 hands
+
+```{r }
+# run the gamble.br function a large number of times and take the mean and variance
+v2e <- replicate(1000,gamble.br(sbr,b, 500, 18/38))
+mean(v2e)
+var(v2e)
+```
+
+## 3 : Bootstrap
+
+```{r }
+bootstrap <- function(v) {
+  newv <- v - mean(v) + sbr
+  n <- 1000
+  bstrap <- double(n)
+  for (i in 1:n) {
+    newsample <- sample(newv,length(v),replace = T)
+    bstrap[i] <- mean(newsample)
+  }
+  return(bstrap)
+}
+var(bootstrap(v1d))
+var(bootstrap(v1e))
+var(bootstrap(v2d))
+var(bootstrap(v2e))
+```
+
+## Part II : Elo Ratings
+
+## 4 : Setup
+
+```{r }
+# true vector of ratings
+tv <- integer(13)
+for (i in 1:13) {
+  tv[i] <- sample(seq(-2,2),1)
+}
+tv
+
+# vector of current ratings
+cv <- tv
+
+# matrix of ratings over time
+rm <- matrix(NA, nrow = 13, ncol = 10000)
+rm[,1] <- cv
+```
+
+## 5 : Function to simulate a game
+
+```{r }
+game <- function(i, j, tv) {
+  p.i <- 1/(1+exp(tv[j]-tv[i]))    # probability that player i will win
+  i.win <- rbinom(1,1,p.i)           # return 1 if i wins, 0 if j wins
+  return(i.win)
+}
+```
+
+## 6 : Function to update ratings
+
+```{r }
+rating.update <- function(i, j, k, tv, cv) {
+  i.win <- game(i, j, tv)
+  p.i <- 1/(1+exp(tv[j]-tv[i]))
+  if(i.win==1) {
+    cv[i] <- cv[i] + k*(1-p.i)
+    cv[j] <- cv[j] - k*(1-p.i)
+  }
+  else {
+    cv[i] <- cv[i] - k*p.i
+    cv[j] <- cv[j] + k*p.i
+  }
+  return(cv)
+}
+```
+
+## 7 : Function to simulate game between random players
+
+```{r }
+random.match <- function(k, tv, cv) {
+  # select 2 players to be matched against each other
+  players <- sample(1:length(tv),2,replace = FALSE)
+  # run the rating.update function
+  cv <- rating.update(players[1], players[2], k, tv, cv)
+  return(cv)
+}
+```
+
+## 8 : Function to simulate tournament
+
+```{r }
+tournament <- function(n=10000, k, tv, cv){
+  rm <- matrix(NA, nrow = 13, ncol = 10000)
+  rm[,1] <- cv
+  for (iter in 2:n) {
+    rm[,iter] <- random.match(k, tv, cv)
+  }
+  return(rm)
+}
+```
+
+## 9 : Simulate a tournament
+
+```{r }
+rm <- tournament(n=10000, k=0.01, tv, cv)
+
+# create a matrix tracking the best rating over time
+best.p <- apply(rm, 2, max)
+# create a matrix tracking the worst rating over time
+worst.p <- apply(rm, 2, min)
+
+plot(best.p,ty="l",col="green",main="k=0.01",ylab="Rating",xlab="Match",ylim=c(-3,3))
+lines(worst.p, col="red")
+```
+
+The best and worst rating values seem to converge to 2 and -2, respectively, which is what we observed from the true ratings.
+
+## 10 : More simulations
+
+```{r }
+rm <- tournament(n=10000, k=0.03, tv, cv)
+best.p <- apply(rm, 2, max)
+worst.p <- apply(rm, 2, min)
+plot(best.p,ty="l", col="green", main="k=0.03",ylab="Rating",xlab="Match",ylim=c(-3,3))
+lines(worst.p, col="red")
+
+rm <- tournament(n=10000, k=0.06, tv, cv)
+best.p <- apply(rm, 2, max)
+worst.p <- apply(rm, 2, min)
+plot(best.p,ty="l", col="green", main="k=0.06",ylab="Rating",xlab="Match",ylim=c(-3,3))
+lines(worst.p, col="red")
+
+rm <- tournament(n=10000, k=0.1, tv, cv)
+best.p <- apply(rm, 2, max)
+worst.p <- apply(rm, 2, min)
+plot(best.p,ty="l", col="green", main="k=0.1",ylab="Rating",xlab="Match",ylim=c(-3,3))
+lines(worst.p, col="red")
+
+rm <- tournament(n=10000, k=0.3, tv, cv)
+best.p <- apply(rm, 2, max)
+worst.p <- apply(rm, 2, min)
+plot(best.p,ty="l", col="green", main="k=0.3",ylab="Rating",xlab="Match",ylim=c(-3,3))
+lines(worst.p, col="red")
+
+rm <- tournament(n=10000, k=0.6, tv, cv)
+best.p <- apply(rm, 2, max)
+worst.p <- apply(rm, 2, min)
+plot(best.p,ty="l", col="green", main="k=0.6",ylab="Rating",xlab="Match",ylim=c(-3,3))
+lines(worst.p, col="red")
+
+rm <- tournament(n=10000, k=1, tv, cv)
+best.p <- apply(rm, 2, max)
+worst.p <- apply(rm, 2, min)
+plot(best.p,ty="l", col="green", main="k=1",ylab="Rating",xlab="Match",ylim=c(-3,3))
+lines(worst.p, col="red")
+```
+
+The smallest k values provide more stable results that are closer to the true ratings. The larger k values have much higher variance.
+
+## Also : if we wanted to track the best and worst *players* over time:
+
+```{r }
+rm <- tournament(n=10000, k=0.01, tv, cv)
+best.p <- apply(rm, 2, which.max)
+worst.p <- apply(rm, 2, which.min)
+plot(best.p,ty="p", col="green", main="k=0.01",ylab="Player",xlab="Match",ylim=c(0,13))
+points(worst.p, col="red")
+```
+

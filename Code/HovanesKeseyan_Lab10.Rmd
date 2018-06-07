@@ -1,0 +1,171 @@
+---
+title: "HovanesKeseyan_Lab10"
+author: "Hovanes Keseyan"
+date: "November 29, 2016"
+output: pdf_document
+---
+
+## Testing for Outliers
+
+```{r }
+x <- c(2.2, 7.8, -4.4, 0.0, -1.2, 3.9, 4.9, 2.0, -5.7, -7.9, -4.9, 28.7, 4.9)
+```
+
+## 1 : Calculating quartiles
+
+```{r }
+#xs <- sort(x)
+
+# first quartile
+q1 <- quantile(x, 0.25)
+q1
+
+# third quantile
+q3 <- quantile(x, 0.75)
+q3
+
+# interquartile range
+iqr <- q3 - q1
+iqr
+```
+
+## 2 : quartiles function
+
+```{r }
+quartiles <- function(x){
+  output <- vector("list", 3)
+  names(output) <- c("First quartile", "Third quartile", "Inter-quartile range")
+  
+  q1 <- quantile(x, 0.25)
+  output[1] <- q1
+  q3 <- quantile(x, 0.75)
+  output[2] <- q3
+  iqr <- q3 - q1
+  output[3] <- iqr
+  
+  return(output)
+}
+
+quartiles(x)
+```
+
+## 3 : Tukey's rule outliers
+
+```{r }
+tukey.low <- q1 - 1.5*iqr
+tukey.low
+
+tukey.high <- q3 + 1.5*iqr
+tukey.high
+
+sort(x)
+```
+
+The only outlier is 28.7 (the 12th entry), because it is the only value in the vector that is lower than the low end or higher than the high end of the values calculated by Tukey's rule.
+
+## 4 & 5 : Tukey Outlier functions
+
+```{r }
+tukey.outlier <- function(x){
+  n <- length(x)
+  outliers <- logical(n)
+  q <- quartiles(x)
+  tukey.low <- q[[1]] - 1.5*q[[3]]
+  tukey.high <- q[[3]] + 1.5*q[[3]]
+  # if value is outlier, return TRUE for corresponding entry in the outliers
+  outliers <- ifelse(x < tukey.low | x > tukey.high, T, F)
+  return(outliers)
+}
+
+tukey.outlier(x)
+
+test.tukey.outlier <- function(x){
+  # initialize vector of manual outliers found by observation
+  mo <- logical(length(x))
+  # we know that the only outlier is the 12th entry (28.7)
+  mo[12] <- T
+  to <- tukey.outlier(x)
+  # create a  vector that stores FALSE for each entry where function fails
+  test.results <- ifelse(to == mo, T, F)
+  # the test works if and only if all values of the vector are TRUE
+  response <- ifelse(all(test.results),T, c("The function fails the test."))
+  return(response)
+}
+
+test.tukey.outlier(x)
+```
+
+## 6 : -x
+
+```{r }
+q <- quartiles(-x)
+tukey.low <- q[[1]] - 1.5*q[[3]]
+tukey.low
+tukey.high <- q[[3]] + 1.5*q[[3]]
+tukey.high
+sort(-x)
+-x
+```
+
+Again, the 12th entry (this time, -28.7) is the only outlier.
+
+## 7 : 100*x
+
+```{r }
+q <- quartiles(100*x)
+tukey.low <- q[[1]] - 1.5*q[[3]]
+tukey.low
+tukey.high <- q[[3]] + 1.5*q[[3]]
+tukey.high
+sort(100*x)
+100*x
+```
+
+Again, the 12th entry (this time, 2870) is the only outlier.
+
+## 8 & 9 : Test Tukey outlier on new cases
+
+```{r }
+tukey.outlier(-x)
+test.tukey.outlier(-x)
+
+tukey.outlier(100*x)
+test.tukey.outlier(100*x)
+```
+
+The function does not need to be modified, since in each case we had the same set of entries (only entry 12) as the outliers. The function passes the test each time.
+
+## 10 : 
+
+```{r }
+y <- c(11.0, 14.0, 3.5, 52.5, 21.5, 12.7, 16.7, 11.7, 10.8, -9.2, 12.3, 13.8, 11.1)
+q <- quartiles(y)
+tukey.low <- q[[1]] - 1.5*q[[3]]
+tukey.low
+tukey.high <- q[[3]] + 1.5*q[[3]]
+tukey.high
+sort(y)
+y
+```
+
+We have the 10th and 3rd entries (-9.2 and 3.5) as low outliers, and every other entry as high outliers. We need to modify our test.tukey.outlier function to account for all of the values in the data set as outliers.
+
+```{r }
+test.tukey.outlier <- function(x){
+  # initialize vector of manual outliers found by observation
+  mo <- logical(length(x))
+  # we know that the only outlier is the 12th entry (28.7)
+  mo[1:13] <- T
+  to <- tukey.outlier(x)
+  # create a  vector that stores FALSE for each entry where function fails
+  test.results <- ifelse(to == mo, T, F)
+  # the test works if and only if all values of the vector are TRUE
+  response <- ifelse(all(test.results),T, c("The function fails the test."))
+  return(response)
+}
+
+tukey.outlier(y)
+test.tukey.outlier(y)
+```
+
+The function still passes the test after modifying the test to reflect what we observed for this new data set.

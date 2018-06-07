@@ -1,0 +1,181 @@
+---
+title: "HovanesKeseyan_Homework3"
+author: "Hovanes Keseyan"
+date: "October 15, 2016"
+output: pdf_document
+---
+
+## 1 : Plotting the data
+
+```{r }
+gmp <- read.table("gmp.dat")
+gmp$pop <- round(gmp$gmp/gmp$pcgmp)
+
+plot(pcgmp~pop, data=gmp, log="x", xlab="Population", ylab="Per-Capita Economic 
+     Output ($/person-year)", main="US Metropolitan Areas, 2006")
+
+# a = 0.125
+curve(6611*x^(1/8),add=TRUE,col="blue")
+
+# a = 0.1
+curve(6611*x^(0.1),add=TRUE,col="red")
+
+# a = 0.15
+curve(6611*x^(0.15),add=TRUE,col="green")
+
+```
+
+## 2 : mse function
+
+```{r }
+mse.y0.a <- c(0,0)
+mse.N <- gmp$pop
+mse.Y <- gmp$pcgmp
+
+# create the function with default input values for N and Y
+mse <- function(mse.y0.a, mse.N = gmp$pop, mse.Y = gmp$pcgmp) {
+  # calculate squared error for each element
+  mse.calc <- (mse.Y - mse.y0.a[1]*(mse.N)^mse.y0.a[2])^2 
+  # sum the squared errors for each element and divide by sample size to obtain MSE
+  mse.mean <- sum(mse.calc) / length(mse.N)  
+  # the last element in the mse.mean array contains the final sum
+  return(mse.mean[length(mse.mean)])                              
+}
+
+mse(c(6611, 0.15))                                                 
+# correct value returned
+
+mse(c(5000, 0.10))                                                 
+# correct value is off by 1, small rounding error present
+
+```
+
+## 3 : nlm function
+
+```{r }
+nlm(mse, c(y0=6611,a=1/8))
+
+nlm(mse, c(y0=5000,a=0.10))
+
+nlm(mse, c(y0=5555, a=0.15))
+```
+
+Minimum represents the minimum value for the function mse() for the given starting value pair. This number is the mean square error. The first element in the estimate is the estimated y0 starting value, while the second element in the estimate is the estimated parameter a. The values for each iteration are found below the code for each starting value pair.
+
+## 4 : plm function
+
+```{r }
+plm.final <- data.frame(0, 0, 0)
+names(plm.final) <- c("y0", "a", "MSE")
+
+plm <- function(y0, a, mse.N = gmp$pop, mse.Y = gmp$pcgmp) {
+  nlm.est <- nlm(mse, c(y0, a), mse.N, mse.Y)
+  plm.final["MSE"] <- nlm.est$minimum
+  plm.final["y0"] <- nlm.est$estimate[1]
+  plm.final["a"] <- nlm.est$estimate[2]
+  
+  return(plm.final)
+}
+
+plm(y0 = 6611, a = 0.15)
+
+plm(y0 = 5000, a = 0.10)
+
+```
+
+The MSE differs for each case because of the different initial guesses, particularly for the parameter a. The MSE in the case of y0=6611 and a=0.15 has the lower MSE.
+
+## 5 : jackknife
+
+## 5a : mean and standard error of the mean of per-capita GMP
+
+```{r }
+mean.pcgmp <- mean(gmp$pcgmp)
+mean.pcgmp
+
+sd.pcgmp <- sd(gmp$pcgmp)
+
+sem.pcgmp <- sd.pcgmp / (length(gmp$pcgmp))^(0.5)
+sem.pcgmp
+```
+
+## 5b : function for jackknifed means
+
+```{r }
+jackknife <- function(i) {
+  jk.m.pcgmp <- mean(gmp$pcgmp[-i])
+  return(jk.m.pcgmp)
+}
+
+```
+
+## 5c : jackknifed means vector
+
+```{r }
+# sapply takes the index of each element in the pcgmp column and applies it to the jackknife function we created above
+jackknifed.means <- sapply(1:length(gmp$pcgmp), jackknife)
+jackknifed.means
+```
+
+## 5d : jackknife approximation to the standard error of the mean
+
+```{r }
+# number of elements
+n.jkm <- length(jackknifed.means)
+# jackknife variance
+v.jkm <- ((n.jkm - 1)^2 / n.jkm) * var(jackknifed.means)
+# jackknife standard error
+sem.jkm <- (v.jkm)^(0.5)
+sem.jkm
+```
+
+The standard error of the mean for both part (a) and the jackknifed vector look identical.
+
+## 6 : plm.jackknife
+
+```{r }
+plm.jk.final <- data.frame(0, 0)
+names(plm.jk.final) <- c("y0 SE", "a SE")
+i <- 0
+
+plm.jackknife <- function(y0, a, mse.N = gmp$pop, mse.Y = gmp$pcgmp) {
+  n.jkplm <- length(mse.Y)
+  y0.jk <- vector( ,n.jkplm)
+  a.jk <- vector( ,n.jkplm)
+  
+  for (i in 1:n.jkplm) {
+    jk.plm <- plm(y0, a, mse.N = mse.N[-i], mse.Y = mse.Y[-i])
+    y0.jk[i] <- jk.plm$y0
+    a.jk[i] <- jk.plm$a
+  }
+  
+  se.y0 <- ((n.jkplm - 1)^2 / n.jkplm) * var(y0.jk)
+  se.a <- ((n.jkplm - 1)^2 / n.jkplm) * var(a.jk)
+  
+  plm.jk.final <- c(se.y0, se.a)
+  return(plm.jk.final)
+}
+
+plm.jackknife(y0 = 6611, a = 0.15)
+
+plm.jackknife(y0 = 8000, a = 0.12)
+```
+
+The standard error is very small for both parameters, which is something we are pleased to see. We want to minimize the standard error and have it be close to zero when obtaining estimates for the parameters.
+
+## 7 : gmp 2013
+
+```{r }
+gmp.2013 <- read.table("gmp-2013.dat")
+gmp.2013$pop <- round(gmp.2013$gmp / gmp.2013$pcgmp)
+
+head(gmp)
+
+head(gmp.2013)
+
+plm(y0 = 6611, a = 0.15, mse.N = gmp.2013$pop, mse.Y = gmp.2013$pcgmp)
+
+plm.jackknife(y0 = 6611, a = 0.15, mse.N = gmp.2013$pop, mse.Y = gmp.2013$pcgmp)
+```
+
+The estimate for y0 is exactly the same as in the previous data set. The estimates for a and MSE have changed noticeably, but are within a similar degree of power. The estimates for the standard error are also different, but also very small and close to zero.

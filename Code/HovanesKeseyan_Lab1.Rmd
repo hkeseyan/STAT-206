@@ -1,0 +1,168 @@
+---
+title: "HovanesKeseyan_Lab1"
+author: "Hovanes Keseyan"
+date: "September 28, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part I
+
+## 1 & 2 : Exponential distribution, means, and standard deviations
+
+```{r }
+## Generate a standard exponential distribution with 200 random values
+exp.draws.1 = rexp(n=200, rate=1)
+
+# Mean and standard deviation of the exponential distribution
+mean(exp.draws.1)
+sd(exp.draws.1)
+```
+```{r}
+## Generate exponential distributions with 200 random values each and varying rates
+exp.draws.0.1 = rexp(n=200, rate=0.1)
+exp.draws.0.5 = rexp(n=200, rate=0.5)
+exp.draws.5 = rexp(n=200, rate=5)
+exp.draws.10 = rexp(n=200, rate=10)
+
+# Mean and standard deviation of the exponential distribution
+mean(exp.draws.0.1)
+sd(exp.draws.0.1)
+mean(exp.draws.0.5)
+sd(exp.draws.0.5)
+mean(exp.draws.5)
+sd(exp.draws.5)
+mean(exp.draws.10)
+sd(exp.draws.10)
+```
+
+
+## 3 : Plotting exponential distributions and their relationships
+
+## 3a : Histogram
+
+```{r , echo=FALSE}
+hist(exp.draws.1)
+```
+
+## 3b : Scatterplot
+
+```{r , echo=FALSE}
+plot(exp.draws.1)
+```
+
+## 3c : Scatterplot of exponential distribution with rate 5 versus exponential distribution with rate 0.1
+
+```{r , echo=FALSE}
+plot(exp.draws.5, exp.draws.0.1)
+```
+
+## 4 : Plotting rates, means, and standard deviations versus each other
+
+``` {r}
+## Create vectors for means, standard deviations, and rates
+means = c(mean(exp.draws.1), mean(exp.draws.0.1), mean(exp.draws.0.5), mean(exp.draws.5), mean(exp.draws.10))
+sds = c(sd(exp.draws.1), sd(exp.draws.0.1), sd(exp.draws.0.5), sd(exp.draws.5), sd(exp.draws.10))
+rates = c(1, 0.1, 0.5, 5, 10)
+```
+
+The plot below displays the mean for each exponential distribution as a function of rate. The plot predictably seems to follow the pattern of an exponential function.
+
+```{r , echo=FALSE}
+plot(rates, means)
+```
+
+The plot below displays the standard deviation for each exponential distribution as a function of rate. Like the plot above, the plot seems to follow the pattern of an exponential function.
+
+```{r , echo=FALSE}
+plot(rates, sds)
+```
+
+The plot below displays the mean for each exponential distribution as a function of standard deviation. The plot seems to follow a linear function with slope close to 1, which makes sense considering both the mean and standard deviation returned the same pattern when plotted versus rate.
+
+```{r , echo=FALSE}
+plot(sds, means)
+```
+
+
+## Part II
+
+## 5a : Standard exponential distribution, mean, standard deviation
+
+```{r}
+## Generate standard exponential distribution with 1.1 million values
+big.exp.draws.1 = rexp(n=1100000, rate=1)
+
+## Mean and standard deviation of the standard exponential distribution
+mean(big.exp.draws.1)
+sd(big.exp.draws.1)
+```
+
+## 5b : Histogram of standard exponential distribution
+
+```{r}
+hist(big.exp.draws.1)
+```
+
+The histogram of the standard exponential distribution above appears to match the function for exponential distribution. This is expected, particularly with the large sample size as the one we have here.
+
+
+## 5c : Exponential distribution with values only greater than 1
+
+```{r}
+## Create and vector containing only values greater than 1 by identifying values satisfying the condition as True and calling those values from the original dataset
+over1.big.exp.draws.1 = big.exp.draws.1[big.exp.draws.1 > 1]
+
+## Mean of the new dataset
+mean(over1.big.exp.draws.1)
+```
+
+As expected, the mean of this dataset is higher than the mean of the previous dataset, because of the removal of the data points less than or equal to 1.
+
+## 5d : Exponential distribution as a matrix
+
+```{r}
+## Create a matrix with 1100 rows and 1000 columns using the data from the standard exponential distribution
+big.exp.draws.1.mat = array(big.exp.draws.1, dim=c(1100,1000))
+
+## Histogram of the matrix
+hist.big.exp.draws.1.mat = hist (big.exp.draws.1.mat)
+```
+
+The data points have not changed. The histogram looks the same for the vector as it did for the matrix. The difference is that the data in the matrix is arranged into multiple columns and rows.
+
+## 5e : Mean of a specific column
+
+```{r}
+## Create a vector which contains all of the values from only the 371st column of the matrix
+col371.big.exp.draws.1.mat = c(big.exp.draws.1.mat[,371])
+
+## Mean of the new vector
+mean(col371.big.exp.draws.1.mat)
+```
+
+## 5f : Mean of all columns
+
+```{r}
+## Mean of all columns displayed with each mean corresponding to each column number respectively
+colMeans(big.exp.draws.1.mat)
+```
+
+Note that the 371st entry in the array is equal to the answer to 5e.
+
+```{r}
+hist(colMeans(big.exp.draws.1.mat))
+```
+
+The shape of the histogram here does not match the shape of the histogram in 5b because this is histogram displays the mean of each column, which groups the data, as opposed to a histogram of each data point, which is a more discretized dataset. This histogram looks like a standard distribution with mean approximately 1 which makes sense.
+
+## 5g : Variance
+
+```{r}
+var(big.exp.draws.1)
+```
+
+The mean of the square of each number in a set is the variance of the set. The square root of the variance is the standard deviation.

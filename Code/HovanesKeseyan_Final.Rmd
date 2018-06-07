@@ -1,0 +1,232 @@
+---
+title: "HovanesKeseyan_Final"
+author: "Hovanes Keseyan"
+date: "December 4, 2016"
+output: pdf_document
+---
+
+## Part I : Flour Beetle Population
+
+## 1 : Graphing $g(K,r)$
+
+```{r }
+days <- c(0, 8, 28, 41, 63, 79, 97, 117, 135, 154)
+beetles <- c(2, 47,192, 256, 768, 896, 1120, 896, 1184, 1024)
+given <- list(t=days, N.obs=beetles)
+given
+
+g <- function(K=100, r=0.1, t=days, N.obs=beetles){
+  n <- length(K)
+  result <- double(n)
+  m <- length(t)
+  for (i in 1:n) {
+    N <- (2*K[i])/(2 + (K[i]-2)*exp(-r[i]*t))
+    g <- 0
+    g <- g + (N-N.obs)^2
+    result[i] <- g[m]
+  }
+  return(result)
+}
+
+n <- 50
+# create K and r vectors with a sequence of n values
+K <- seq(0, 2000, length.out = n)
+r <- seq(0,2, length.out = n)
+z <- outer(K, r, g)
+contour(K, r, z)
+persp(K, r, z, phi = 30, theta = 150, d=1)
+```
+
+From the graphs, it appears K=1000 is a good place to start. A small value for r looks ideal as well, something around 0.05 or 0.1.
+
+## 2 : Estimating $(K,r)$
+
+```{r }
+nls(N.obs ~ (2*K)/(2 + (K-2)*exp(-r*t)), data=given, start=c(K=100, r=0.1))
+```
+
+The estimates are K=1033.515 and r=0.118, which seem possible based on our graphs, and from what we know from population growth models in general, where r is usually between 0 and 1, in the order of 10^-1, while K is often to the order of 10^2, 10^3.
+
+## 3 : Monte Carlo approach
+
+```{r }
+runs <- 10000
+K.est <- 1033.515
+r.est <- 0.118
+N <- (2*K.est)/(2 + (K.est-2)*exp(-r.est*days))
+mc <- rlnorm(runs,log(N),1)
+hist(mc, prob=T)
+```
+
+## Part II : Pine needles
+
+```{r }
+pn <- read.csv("http://faculty.ucr.edu/~jflegal/206/pine_needles.txt", header=TRUE, sep=" ")
+head(pn)
+# concentrations of rows from clean sites
+c.pn <- pn[pn$site=="clean","concentrations"]
+# concentrations of rows from steam sites
+s.pn <- pn[pn$site=="steam", "concentrations"]
+```
+
+## 4 : Plotting the data
+
+```{r }
+summary(pn)
+mean(pn$concentrations)
+mean(c.pn)
+mean(s.pn)
+
+hist(pn$concentrations, main = "Frequency of concentrations", prob=T)
+curve(dnorm(x, mean = mean(pn$concentrations), sd=sd(pn$concentrations)), add = TRUE)
+hist(c.pn, main = "Frequency of concentrations from clean sites", prob=T)
+curve(dnorm(x, mean = mean(c.pn), sd=sd(c.pn)), add = TRUE)
+hist(s.pn, main = "Frequency of concentrations from steam sites", prob=T)
+curve(dnorm(x, mean = mean(s.pn), sd=sd(s.pn)), add = TRUE)
+```
+
+The data is not normally distributed as we can see with how much trouble the histogram for each subset of the data has in fitting the normal distribution curves. There are many outliers at the higher concentrations which are skewing the distribution to the right, and not enough at the low end. This is also resulting in not as high of a density near the mean as we would expect from a normal distribution.
+
+## 5 : Log transformation
+
+```{r }
+l.pn <- pn
+# log transform the concentration data
+l.pn[,2] <- log(pn[,2])
+c.l.pn <- l.pn[l.pn$site=="clean","concentrations"]
+s.l.pn <- l.pn[l.pn$site=="steam", "concentrations"]
+
+hist(pn$concentrations, main = "Frequency of concentrations", prob=T)
+curve(dnorm(x, mean = mean(l.pn$concentrations), sd=sd(l.pn$concentrations)), add = TRUE)
+hist(c.l.pn, main = "Frequency of concentrations from clean sites", prob=T)
+curve(dnorm(x, mean = mean(c.l.pn), sd=sd(c.l.pn)), add = TRUE)
+hist(s.l.pn, main = "Frequency of concentrations from steam sites", prob=T)
+curve(dnorm(x, mean = mean(s.l.pn), sd=sd(s.l.pn)), add = TRUE)
+
+shapiro.test(pn$concentrations)
+shapiro.test(c.l.pn)
+shapiro.test(s.l.pn)
+
+qqnorm(pn$concentrations)
+qqline(pn$concentrations)
+qqnorm(c.l.pn)
+qqline(c.l.pn)
+qqnorm(s.l.pn)
+qqline(s.l.pn)
+```
+
+The density of the overall concentration data from both sites does not at all seem to be normally distributed, but this is likely because we have data from both sites that many not exactly be correlated well, so we can excuse this. Upon looking at the transformed data from each site individually, we can see the density looks to match much better with a nromal distribution in both cases. However, we see a density of 0 for one interval very close to the mean, which is very strange, but it might be an anomaly resulting from a small sample size.
+
+Upon inspection of the Shapiro-Wilk normality test results, the p-values tell us that we can reject the hypothesis that the overall data comes from a normally distributed set, but the data for each site respectively does not reject the hypothesis that the data comes from normally distributed set. However, the Q-Q Plot in each case does not fit the normal line very well. It is close, but it looks like the data are probably not normally distributed.
+
+## 6 : Bootstrap median differences
+
+```{r }
+# number of of times we will resample
+n <- 1000
+# function will resample with replacement from the sample for each site
+bootstrap.resample <- function(x) sample(x, length(x), replace = T)
+# function will run resampling n times and return a vector containing the difference in medians between the bootstrap samples of each site
+med.diff <- function(site1, site2){
+  bstrap <- double(n)
+  for (i in 1:n) {
+    s1 <- bootstrap.resample(site1)
+    s2 <- bootstrap.resample(site2)
+    bstrap[i] <- abs(median(s1)-median(s2))
+  }
+  return(bstrap)
+}
+differences <- med.diff(c.pn, s.pn)
+
+# 95% confidence interval uses z-value of 1.96
+low.ci <- mean(differences) - 1.96*(sd(differences)/sqrt(n))
+high.ci <- mean(differences) + 1.96*(sd(differences)/sqrt(n))
+low.ci
+```
+
+There is a 95% chance that the difference in medians is between 3.627552 and 3.704088.
+
+## Part III : Time between events
+
+## 7 : Function to draw n values of X from p(x)
+
+```{r }
+draw <- function(n, a){
+  result <- double(n)
+  lambda <- rgamma(n, shape=a, scale=1)
+  result <- rexp(n, rate=lambda)
+  return(result)
+}
+```
+
+## 8 : Metropolis Hastings
+
+```{r }
+chain <- function(x, a, n){
+  lambda <- double(n)
+  lambda[1] <- rgamma(1, shape=a, scale=1)
+  for(i in 2:n){
+    # proposal should draw from uniform distribution with width 1 centered on lambda
+    lambda.prime <- runif(1, lambda[i-1]-0.5, lambda[i-1]+0.5)
+    u <- (lambda.prime*exp(-lambda.prime*x))/(lambda[i-1]*exp(-lambda[i-1]*x))
+    if(runif(1) < u)
+      lambda[i] <- lambda.prime
+    else
+      lambda[i] <- lambda[i-1]
+  }
+  return(lambda)
+}
+```
+
+## 9 : Integrating to find p(x)
+
+$p(\lambda;a,s)=\frac{x^{a-1}e^{-x/s}}{s^a\Gamma(a)}$
+
+$p(\lambda;a,1)=\frac{x^{a-1}e^{-x}}{\Gamma(a)}$
+
+$p(x|\lambda)=\lambda e^{-\lambda x}$
+
+$p(x) = \int_0^{\infty} f(\lambda)f(x|\lambda)d\lambda = \int_0^{\infty} \frac{\lambda e^{-\lambda x}x^{a-1}e^{-x}}{\Gamma(a)}d\lambda = \frac{x^{a-1}e^{-x}}{\Gamma(a)} \int_0^{\infty} \lambda e^{-\lambda x}d\lambda$
+
+$p(x) = \frac{-e^{-\lambda x}(\lambda x + 1)x^{a-1}e^{-x}}{x^2 \Gamma(a)}$
+
+## 10 : Drawing values
+
+```{r }
+drawn.sample <- draw(2000, 12)
+hist(drawn.sample, prob=T)
+
+
+```
+
+## 11 : Finding $p(\lambda|x)$
+
+$p(\lambda|x) = \frac{p(\lambda)p(x|\lambda)}{p(x)} = \frac{\frac{\lambda e^{-\lambda x}x^{a-1}e^{-x}}{\Gamma(a)}}{{\frac{-e^{-\lambda x}(\lambda x + 1)x^{a-1}e^{-x}}{x^2 \Gamma(a)}}}$
+
+$p(\lambda|x) = \frac{-\lambda}{\lambda x + 1}$
+
+## 12 : Drawing from Metropolis Hastings sampler
+
+```{r }
+MH.sample <- chain(6,12,5000)
+hist(MH.sample, prob=T)
+```
+
+The plots both seem to show an exponential distribution pattern, as expected, although the one generated from the Metropolis Hastings algorithm seems much steeper.
+
+## 13 : Different probability laws
+
+The initialization of lamdba would have to change, from 
+
+lambda <- rgamma(n, shape=a, scale=1)
+
+and
+
+lambda[1] <- rgamma(1, shape=a, scale=1)
+
+to another function besides rgamma() which reflects the distribution of p(lambda), for the functions created in (7) and (8), respectively.
+
+Furthermore, code in the function in (8) would have to change to accomodate the new acceptance ratio u from the new p(lambda).
+
+
+

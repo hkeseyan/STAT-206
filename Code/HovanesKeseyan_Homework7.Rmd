@@ -1,0 +1,91 @@
+---
+title: "HovanesKeseyan_Homework7"
+author: "Hovanes Keseyan"
+date: "November 13, 2016"
+output: pdf_document
+---
+
+## Part I : Beverton-Holt Model
+
+```{r }
+url <- 'http://www.faculty.ucr.edu/~jflegal/fish.txt'
+salmon <- read.table(url, header=TRUE)
+names(salmon) <- c("r", "s")
+```
+
+## 1 : Scatterplot of the data with Beverton-Holt curve overlay
+
+```{r }
+require(ggplot2)
+require(methods)
+p <- ggplot(salmon, aes(x=s,y=r)) + geom_point()
+
+# Beverton-Holt model function returning r given s, beta1, and beta2
+bevholt <- function(s, b1, b2){
+  1/(b1+(b2/s))
+}
+
+p + stat_smooth(method = "lm", formula = y ~ bevholt(x,1,100), se = FALSE, aes(color = "b1=1, b2=100")) + stat_smooth(method = "lm", formula = y ~ bevholt(x,10,100), se = FALSE, aes(color = "b1=5, b2=200")) + stat_smooth(method = "lm", formula = y ~ bevholt(x,1,300), se = FALSE, aes(color = "b1=1, b2=300"))
+```
+
+## 2 : Fitting the linear model to the data set
+
+```{r }
+p + stat_smooth(method = "lm", formula = y ~ x)
+```
+
+## 3 : Estimating stable population level
+
+```{r }
+lm(r ~ s, data=salmon)
+
+p + stat_smooth(method = "lm", formula = y ~ poly(x,1), se = FALSE, color = "blue") + geom_abline(slope = 1, intercept = 0, color = "red", size=1)
+
+N <- 1/((1-0.514)/66.671)
+N
+```
+
+The estimate for the stable population level has beta1=66.671 and beta2=0.514, and is therefore 1/N=(1-66.671)/0.514 since the transformation from R->1/R and S->1/S needs to be applied to N->1/N. This gives a value of approximately 137. We confirm this value by checking that the linear model intercepts the R=S 45 degree line (slope 1 and intercept 0) there.
+
+## 4 : Bootstrap
+
+```{r }
+library(boot)
+ratio <- function(d, w) sum(d$s * w)/sum(d$r * w)
+results <- boot(salmon, ratio, R=1000, stype = "w")
+results
+boot.ci(results, type="bca")
+```
+
+The ratio of spawners to recruits for the bootstrap is 1.318594, and the standard error is 0.0388801. The ratio for the stable population level is 1. The 95% confidence interval for the bootstrap is between 1.244 and 1.397.
+
+## Part II : Snowfall Accumulations
+
+## 5 : Kernel density estimates
+
+```{r }
+url <- 'http://www.faculty.ucr.edu/~jflegal/buffalo.txt'
+buffalo <- read.table(url)
+buffalo <- data.matrix(buffalo)
+density(buffalo, kernel = "gaussian")
+density(buffalo, kernel = "epanechnikov")
+```
+
+## 6 : Different choices of bandwidth
+
+```{r }
+density(buffalo, bw=5, kernel = "gaussian")
+density(buffalo, bw=5, kernel = "epanechnikov")
+density(buffalo, bw=10, kernel = "gaussian")
+density(buffalo, bw=10, kernel = "epanechnikov")
+density(buffalo, bw=20, kernel = "gaussian")
+density(buffalo, bw=20, kernel = "epanechnikov")
+```
+
+## 7 : Kernel vs Bandwidth
+
+The kernel type seems to clearly have a larger significance ont he outcome than the bandwidth does, because the order of power is similar for each bandwidth per kernel type and does not vary as much when bandwidth is changed.
+```{r }
+
+```
+

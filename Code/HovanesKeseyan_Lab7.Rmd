@@ -1,0 +1,108 @@
+---
+title: "HovanesKeseyan_Lab7"
+author: "Hovanes Keseyan"
+date: "November 8, 2016"
+output: pdf_document
+---
+
+## 1 + 2 : Plotting data and fitting the regression models
+
+** google: how can I explore different smooth in ggplot?
+
+```{r }
+url <- 'http://www.faculty.ucr.edu/~jflegal/electemp.txt'
+electemp <- read.table(url)
+
+require(ggplot2)
+require(methods)
+p <- ggplot(electemp, aes(x=temp, y=usage)) + geom_point()
+p + stat_smooth(method = "lm", formula = y ~ poly(x, 1), size = 1, se = FALSE, aes(color = "linear")) + stat_smooth(method = "lm", formula = y ~ poly(x, 2), size = 1, se = FALSE, aes(color = "quadratic"))
+
+options(warn=-1)
+```
+
+The quadratic model fits the data better. It is much smoother and much more representative of the dataset. The linear model is too stiff and does not represent the data away from the line very well.
+
+## 3 : Cross-validation
+
+```{r }
+cv_poly <- function(df, x, y, degree, K) {
+  # band variable (in this case # of degrees)
+  s = seq(from = 1, to = degree, by = 1)
+  n <- nrow(df)
+  cv.error <- matrix(nrow = K, ncol = length(s))
+  foldid <-sample(rep(1:K, length = n))
+  
+  for(i in 1:K) {
+  # Fit, predict, and calculate error for each bandwidth
+  cv.error[i, ] <- sapply(s, function(degree) {
+    # Fit linear model to training set
+    obj <- lm(y ~ poly(x, degree),
+                 data = subset(df, foldid != i))
+    # Predict and calculate error on the validation set
+    y.hat <- predict(obj, newdata = subset(df, foldid == i))
+    pse <- mean((subset(y, foldid == i) - y.hat)^2)
+    return(pse)
+}) 
+}
+  return(cv.error)
+}
+```
+
+## 4 : cv_poly with K=10 and d=1:8
+
+```{r }
+cv_error <- cv_poly(electemp, electemp$temp, electemp$usage, 8, 10)
+cv_error
+```
+
+## 5 : Plotting MSPE versus degree of polynomial
+
+```{r }
+# Columns of cv_error correspond to different bandwidths
+cv.error.estimate <- colMeans(cv_error)
+cv.error.estimate
+
+s = seq(from = 1, to = 8, by = 1)
+qplot(s, cv.error.estimate, geom=c('line', 'point'), xlab='degree', main='K=10')
+```
+
+The lowest MSPE was for the 1st degree polynomial fit, which is the linear regression model. This is by far the best one to choose based on this data.
+
+## 6 + 7 : K=5 cross-validation
+
+```{r }
+cv_error <- cv_poly(electemp, electemp$temp, electemp$usage, 8, 5)
+cv_error
+
+cv.error.estimate <- colMeans(cv_error)
+cv.error.estimate
+
+s = seq(from = 1, to = 8, by = 1)
+qplot(s, cv.error.estimate, geom=c('line', 'point'), xlab='degree', main='K=5')
+```
+
+Linear regression, the 1st degree candidate, is still the best fit.
+
+## 6 + 7 : leave-one-out cross-validation
+
+```{r }
+cv_error <- cv_poly(electemp, electemp$temp, electemp$usage, 8, K=nrow(electemp)-1)
+cv_error
+
+cv.error.estimate <- colMeans(cv_error)
+cv.error.estimate
+
+s = seq(from = 1, to = 8, by = 1)
+qplot(s, cv.error.estimate, geom=c('line', 'point'), xlab='degree', main='Leave-one-out')
+```
+
+The time it takes for computation was longer for leave-one-out cross-validation since there are a lot more folds to compute. Linear regression, the 1st degree candidate, is still the best fit.
+
+In all three cases, linear regression, the 1st degree candidate, is still the best fit.
+
+## 8 : 
+
+```{r }
+p + stat_smooth(method = "lm", formula = y ~ poly(x, 1), size = 1, se = FALSE, aes(color = "linear")) + stat_smooth(method = "lm", formula = y ~ poly(x, 2), size = 1, se = FALSE, aes(color = "quadratic")) + stat_smooth(method = "lm", formula = y ~ poly(x, 4), size = 1, se = FALSE, aes(color = "4th degree")) + stat_smooth(method = "lm", formula = y ~ poly(x, 5), size = 1, se = FALSE, aes(color = "5th degree")) + stat_smooth(method = "lm", formula = y ~ poly(x, 6), size = 1, se = FALSE, aes(color = "6th degree")) + stat_smooth(method = "lm", formula = y ~ poly(x, 7), size = 1, se = FALSE, aes(color = "7th degree")) + stat_smooth(method = "lm", formula = y ~ poly(x, 8), size = 1, se = FALSE, aes(color = "8th degree")) + stat_smooth(method = "lm", formula = y ~ poly(x, 3), size = 1, se = FALSE, aes(color = "cubic"))
+```
